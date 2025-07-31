@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome</title>
+    <!-- We can reuse the same stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="login-container">
+        <h2>Welcome to Our Site!</h2>
+        <p style="text-align: center; margin-bottom: 2rem;">This is the main landing page. Please log in to access your dashboard.</p>
+        <a href="{{ url_for('login') }}" class="btn" style="text-decoration: none; text-align: center; display: block;">Go to Login Page</a>
+    </div>
+</body>
+</html>

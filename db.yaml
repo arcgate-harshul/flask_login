@@ -1,0 +1,4 @@
+mysql_host: 'localhost'
+mysql_user: 'flaskuser'
+mysql_password: 'Jagharrr00'  # Replace with your password
+mysql_db: 'logindb'
