@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login Page</title>
+    <title>Sign Up</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <div class="login-container">
-        <h2>Login</h2>
+        <h2>Create Account</h2>
         
         <!-- Flash messages section -->
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -19,7 +19,7 @@
             {% endif %}
         {% endwith %}
 
-        <form action="/login" method="POST">
+        <form action="/signup" method="POST">
             <div class="form-group">
                 <label for="username">Username</label>
                 <input type="text" id="username" name="username" required>
@@ -28,11 +28,10 @@
                 <label for="password">Password</label>
                 <input type="password" id="password" name="password" required>
             </div>
-            <button type="submit" class="btn">Login</button>
+            <button type="submit" class="btn">Sign Up</button>
         </form>
-        <!-- Link to Signup Page -->
         <p class="form-link">
-            Don't have an account? <a href="{{ url_for('signup') }}">Sign up here</a>
+            Already have an account? <a href="{{ url_for('login') }}">Login here</a>
         </p>
     </div>
 </body>
