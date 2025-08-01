@@ -5,6 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ file.name }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Add the TinyMCE script -->
+    <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <!-- Initialize TinyMCE -->
+    <script>
+      tinymce.init({
+        selector: 'textarea.text-editor',
+        plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount',
+        toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table | align lineheight | numlist bullist indent outdent | emoticons charmap | removeformat',
+        height: 500,
+      });
+    </script>
 </head>
 <body>
     <div class="dashboard-container">
@@ -27,7 +38,8 @@
 
         <div class="editor-container">
             <form action="{{ url_for('view_file', file_id=file.id) }}" method="POST">
-                <textarea name="content" class="text-editor">{{ file.content }}</textarea>
+                <!-- The textarea now has the "text-editor" class for TinyMCE to target -->
+                <textarea name="content" class="text-editor">{{ file.content | safe }}</textarea>
                 <button type="submit" class="btn btn-save">Save File</button>
             </form>
         </div>
