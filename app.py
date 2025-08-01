@@ -18,7 +18,6 @@ app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
 # Other Config
 app.config['SECRET_KEY'] = 'your_super_secret_key'
-# Define the path for the upload folder
 UPLOAD_FOLDER = os.path.join(app.root_path, 'uploads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
@@ -29,12 +28,10 @@ mysql = MySQL(app)
 # --- User Management Routes ---
 @app.route('/')
 def index():
-    """Displays the welcome page."""
     return render_template('index.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    """Handles the login logic."""
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -53,7 +50,6 @@ def login():
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
-    """Handles the user signup logic."""
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -71,14 +67,12 @@ def signup():
 
 @app.route('/logout')
 def logout():
-    """Logs the user out."""
     session.clear()
     return redirect(url_for('login'))
 
 # --- Notes System Routes ---
 @app.route('/dashboard')
 def dashboard():
-    """Displays user's folders."""
     if 'loggedin' not in session:
         return redirect(url_for('login'))
     
@@ -90,9 +84,7 @@ def dashboard():
 
 @app.route('/add_folder', methods=['POST'])
 def add_folder():
-    """Adds a new folder for the user."""
-    if 'loggedin' not in session:
-        return redirect(url_for('login'))
+    if 'loggedin' not in session: return redirect(url_for('login'))
     
     folder_name = request.form['folder_name']
     if folder_name:
@@ -105,9 +97,7 @@ def add_folder():
 
 @app.route('/folder/<int:folder_id>')
 def view_folder(folder_id):
-    """Displays files within a specific folder."""
-    if 'loggedin' not in session:
-        return redirect(url_for('login'))
+    if 'loggedin' not in session: return redirect(url_for('login'))
 
     cur = mysql.connection.cursor()
     cur.execute("SELECT * FROM folders WHERE id = %s AND user_id = %s", (folder_id, session['id']))
@@ -123,13 +113,9 @@ def view_folder(folder_id):
 
 @app.route('/add_file/<int:folder_id>', methods=['POST'])
 def add_file(folder_id):
-    """Handles creating text files AND uploading files."""
-    if 'loggedin' not in session:
-        return redirect(url_for('login'))
-
+    if 'loggedin' not in session: return redirect(url_for('login'))
     cur = mysql.connection.cursor()
 
-    # --- Handle Text File Creation ---
     if 'text_file_name' in request.form:
         file_name = request.form['text_file_name']
         if file_name:
@@ -138,21 +124,16 @@ def add_file(folder_id):
             mysql.connection.commit()
             flash('Text file created!', 'success')
 
-    # --- Handle File Upload ---
     if 'uploaded_file' in request.files:
         file = request.files['uploaded_file']
         if file.filename != '':
-            # Secure the filename to prevent malicious paths
             filename = secure_filename(file.filename)
-            # Create a user-specific directory if it doesn't exist
             user_upload_dir = os.path.join(app.config['UPLOAD_FOLDER'], str(session['id']))
             os.makedirs(user_upload_dir, exist_ok=True)
-            # Save the file
             file_path = os.path.join(user_upload_dir, filename)
             file.save(file_path)
             
-            # Store file info in the database
-            db_filepath = os.path.join(str(session['id']), filename) # Store relative path
+            db_filepath = os.path.join(str(session['id']), filename)
             cur.execute("INSERT INTO files (name, folder_id, user_id, file_type, filepath) VALUES (%s, %s, %s, %s, %s)",
                         (filename, folder_id, session['id'], 'upload', db_filepath))
             mysql.connection.commit()
@@ -161,13 +142,9 @@ def add_file(folder_id):
     cur.close()
     return redirect(url_for('view_folder', folder_id=folder_id))
 
-
 @app.route('/file/<int:file_id>', methods=['GET', 'POST'])
 def view_file(file_id):
-    """Displays and updates a text file's content."""
-    if 'loggedin' not in session:
-        return redirect(url_for('login'))
-
+    if 'loggedin' not in session: return redirect(url_for('login'))
     cur = mysql.connection.cursor()
     cur.execute("SELECT * FROM files WHERE id = %s AND user_id = %s", (file_id, session['id']))
     file = cur.fetchone()
@@ -188,13 +165,9 @@ def view_file(file_id):
     cur.close()
     return render_template('file.html', file=file)
 
-# --- NEW DOWNLOAD ROUTE ---
 @app.route('/download/<int:file_id>')
 def download_file(file_id):
-    """Handles downloading an uploaded file."""
-    if 'loggedin' not in session:
-        return redirect(url_for('login'))
-
+    if 'loggedin' not in session: return redirect(url_for('login'))
     cur = mysql.connection.cursor()
     cur.execute("SELECT * FROM files WHERE id = %s AND user_id = %s", (file_id, session['id']))
     file_info = cur.fetchone()
@@ -202,7 +175,6 @@ def download_file(file_id):
 
     if file_info and file_info['file_type'] == 'upload' and file_info['filepath']:
         try:
-            # send_from_directory is a secure way to send files
             return send_from_directory(app.config['UPLOAD_FOLDER'], file_info['filepath'], as_attachment=True)
         except FileNotFoundError:
             flash('File not found on server.', 'danger')
@@ -210,6 +182,66 @@ def download_file(file_id):
     else:
         flash('File not found or is not downloadable.', 'danger')
         return redirect(url_for('dashboard'))
+
+# --- NEW DELETE AND RENAME ROUTES ---
+
+@app.route('/delete_folder/<int:folder_id>', methods=['POST'])
+def delete_folder(folder_id):
+    if 'loggedin' not in session: return redirect(url_for('login'))
+    cur = mysql.connection.cursor()
+    # Optional: Delete physical files associated with this folder first
+    # This part is more complex, for now we rely on ON DELETE CASCADE for DB cleanup
+    cur.execute("DELETE FROM folders WHERE id = %s AND user_id = %s", (folder_id, session['id']))
+    mysql.connection.commit()
+    cur.close()
+    flash('Folder deleted successfully.', 'success')
+    return redirect(url_for('dashboard'))
+
+@app.route('/rename_folder/<int:folder_id>', methods=['POST'])
+def rename_folder(folder_id):
+    if 'loggedin' not in session: return redirect(url_for('login'))
+    new_name = request.form['new_name']
+    if new_name:
+        cur = mysql.connection.cursor()
+        cur.execute("UPDATE folders SET name = %s WHERE id = %s AND user_id = %s", (new_name, folder_id, session['id']))
+        mysql.connection.commit()
+        cur.close()
+        flash('Folder renamed successfully.', 'success')
+    return redirect(url_for('dashboard'))
+
+@app.route('/delete_file/<int:file_id>', methods=['POST'])
+def delete_file(file_id):
+    if 'loggedin' not in session: return redirect(url_for('login'))
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT * FROM files WHERE id = %s AND user_id = %s", (file_id, session['id']))
+    file_info = cur.fetchone()
+    if file_info:
+        # If it's an uploaded file, delete it from the filesystem
+        if file_info['file_type'] == 'upload' and file_info['filepath']:
+            physical_path = os.path.join(app.config['UPLOAD_FOLDER'], file_info['filepath'])
+            if os.path.exists(physical_path):
+                os.remove(physical_path)
+        
+        # Delete the record from the database
+        cur.execute("DELETE FROM files WHERE id = %s", [file_id])
+        mysql.connection.commit()
+        flash('File deleted successfully.', 'success')
+    cur.close()
+    return redirect(url_for('view_folder', folder_id=file_info['folder_id']))
+
+@app.route('/rename_file/<int:file_id>', methods=['POST'])
+def rename_file(file_id):
+    if 'loggedin' not in session: return redirect(url_for('login'))
+    new_name = request.form['new_name']
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT folder_id FROM files WHERE id = %s AND user_id = %s", (file_id, session['id']))
+    file_info = cur.fetchone()
+    if file_info and new_name:
+        cur.execute("UPDATE files SET name = %s WHERE id = %s", (new_name, file_id))
+        mysql.connection.commit()
+        flash('File renamed successfully.', 'success')
+    cur.close()
+    return redirect(url_for('view_folder', folder_id=file_info['folder_id']))
 
 
 if __name__ == '__main__':

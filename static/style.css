@@ -46,7 +46,6 @@ body {
     margin-bottom: 2rem;
 }
 
-/* New styles for the split form */
 .form-container-split {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -74,6 +73,67 @@ body {
     flex-grow: 1;
 }
 
+/* --- NEW LIST STYLES --- */
+.items-list {
+    margin-top: 2rem;
+}
+
+.list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
+}
+
+.list-item:nth-child(odd) {
+    background-color: #f9f9f9;
+}
+
+.list-item:hover {
+    background-color: #f1f1f1;
+}
+
+.item-link {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: #333;
+    flex-grow: 1;
+}
+
+.item-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.action-form {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-small {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+}
+
+.btn-rename {
+    background-color: #ffc107;
+}
+.btn-rename:hover {
+    background-color: #e0a800;
+}
+
+.btn-delete {
+    background-color: #dc3545;
+}
+.btn-delete:hover {
+    background-color: #c82333;
+}
+
+
+/* --- GRID STYLES (for reference, replaced by list) --- */
 .items-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -97,11 +157,11 @@ body {
 }
 
 .item-icon {
-    font-size: 3rem;
+    font-size: 2rem; /* Adjusted for list view */
+    margin-right: 1rem;
 }
 
 .item-name {
-    margin-top: 0.5rem;
     font-weight: 600;
     word-wrap: break-word;
 }

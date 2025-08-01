@@ -30,13 +30,26 @@
             </form>
         </div>
 
-        <div class="items-grid">
+        <div class="items-list">
             <h3>Your Folders</h3>
             {% for folder in folders %}
-                <a href="{{ url_for('view_folder', folder_id=folder.id) }}" class="item-card folder-card">
-                    <div class="item-icon">📁</div>
-                    <div class="item-name">{{ folder.name }}</div>
-                </a>
+                <div class="list-item">
+                    <a href="{{ url_for('view_folder', folder_id=folder.id) }}" class="item-link">
+                        <div class="item-icon">📁</div>
+                        <div class="item-name">{{ folder.name }}</div>
+                    </a>
+                    <div class="item-actions">
+                        <!-- Rename Form -->
+                        <form action="{{ url_for('rename_folder', folder_id=folder.id) }}" method="POST" class="action-form">
+                            <input type="text" name="new_name" placeholder="New name" required>
+                            <button type="submit" class="btn btn-small btn-rename">Rename</button>
+                        </form>
+                        <!-- Delete Form -->
+                        <form action="{{ url_for('delete_folder', folder_id=folder.id) }}" method="POST" class="action-form">
+                            <button type="submit" class="btn btn-small btn-delete" onclick="return confirm('Are you sure you want to delete this folder and all its contents?');">Delete</button>
+                        </form>
+                    </div>
+                </div>
             {% else %}
                 <p>You don't have any folders yet. Create one above!</p>
             {% endfor %}
