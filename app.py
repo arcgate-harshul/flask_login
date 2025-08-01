@@ -1,25 +1,32 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, send_from_directory
 from flask_mysqldb import MySQL
+from werkzeug.utils import secure_filename
 import yaml
+import os
 
 # Initialize the Flask App
 app = Flask(__name__)
 
-# Configure DB from a YAML file
+# --- Configuration ---
+# DB Config
 db_config = yaml.safe_load(open('db.yaml'))
 app.config['MYSQL_HOST'] = db_config['mysql_host']
 app.config['MYSQL_USER'] = db_config['mysql_user']
 app.config['MYSQL_PASSWORD'] = db_config['mysql_password']
 app.config['MYSQL_DB'] = db_config['mysql_db']
-# Cursors by default return tuples. This will return dictionaries, which are easier to work with.
-app.config['MYSQL_CURSORCLASS'] = 'DictCursor' 
+app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
-# A secret key is needed for sessions and flashing messages
-app.config['SECRET_KEY'] = 'your_super_secret_key' 
+# Other Config
+app.config['SECRET_KEY'] = 'your_super_secret_key'
+# Define the path for the upload folder
+UPLOAD_FOLDER = os.path.join(app.root_path, 'uploads')
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
 
 # Initialize MySQL
 mysql = MySQL(app)
 
+# --- User Management Routes ---
 @app.route('/')
 def index():
     """Displays the welcome page."""
@@ -36,7 +43,6 @@ def login():
         user = cur.fetchone()
         cur.close()
         if user:
-            # Store user info in the session
             session['loggedin'] = True
             session['id'] = user['id']
             session['username'] = user['username']
@@ -54,11 +60,11 @@ def signup():
         cur = mysql.connection.cursor()
         cur.execute("SELECT * FROM users WHERE username = %s", [username])
         if cur.fetchone():
-            flash('Username already exists. Please choose a different one.', 'danger')
+            flash('Username already exists!', 'danger')
         else:
             cur.execute("INSERT INTO users(username, password) VALUES (%s, %s)", (username, password))
             mysql.connection.commit()
-            flash('Account created successfully! Please log in.', 'success')
+            flash('Account created! Please log in.', 'success')
             return redirect(url_for('login'))
         cur.close()
     return render_template('signup.html')
@@ -66,13 +72,10 @@ def signup():
 @app.route('/logout')
 def logout():
     """Logs the user out."""
-    session.pop('loggedin', None)
-    session.pop('id', None)
-    session.pop('username', None)
+    session.clear()
     return redirect(url_for('login'))
 
-# --- NEW DASHBOARD AND NOTES ROUTES ---
-
+# --- Notes System Routes ---
 @app.route('/dashboard')
 def dashboard():
     """Displays user's folders."""
@@ -97,7 +100,7 @@ def add_folder():
         cur.execute("INSERT INTO folders (name, user_id) VALUES (%s, %s)", (folder_name, session['id']))
         mysql.connection.commit()
         cur.close()
-        flash('Folder created successfully!', 'success')
+        flash('Folder created!', 'success')
     return redirect(url_for('dashboard'))
 
 @app.route('/folder/<int:folder_id>')
@@ -107,11 +110,10 @@ def view_folder(folder_id):
         return redirect(url_for('login'))
 
     cur = mysql.connection.cursor()
-    # Ensure the user owns the folder they are trying to view
     cur.execute("SELECT * FROM folders WHERE id = %s AND user_id = %s", (folder_id, session['id']))
     folder = cur.fetchone()
     if not folder:
-        flash('Folder not found or you do not have permission to view it.', 'danger')
+        flash('Folder not found.', 'danger')
         return redirect(url_for('dashboard'))
 
     cur.execute("SELECT * FROM files WHERE folder_id = %s AND user_id = %s", (folder_id, session['id']))
@@ -121,45 +123,94 @@ def view_folder(folder_id):
 
 @app.route('/add_file/<int:folder_id>', methods=['POST'])
 def add_file(folder_id):
-    """Adds a new file to a folder."""
-    if 'loggedin' not in session:
-        return redirect(url_for('login'))
-
-    file_name = request.form['file_name']
-    if file_name:
-        cur = mysql.connection.cursor()
-        cur.execute("INSERT INTO files (name, content, folder_id, user_id) VALUES (%s, %s, %s, %s)", 
-                    (file_name, '', folder_id, session['id']))
-        mysql.connection.commit()
-        cur.close()
-        flash('File created successfully!', 'success')
-    return redirect(url_for('view_folder', folder_id=folder_id))
-
-@app.route('/file/<int:file_id>', methods=['GET', 'POST'])
-def view_file(file_id):
-    """Displays and updates a file's content."""
+    """Handles creating text files AND uploading files."""
     if 'loggedin' not in session:
         return redirect(url_for('login'))
 
     cur = mysql.connection.cursor()
-    # Ensure the user owns the file they are trying to access
+
+    # --- Handle Text File Creation ---
+    if 'text_file_name' in request.form:
+        file_name = request.form['text_file_name']
+        if file_name:
+            cur.execute("INSERT INTO files (name, content, folder_id, user_id, file_type) VALUES (%s, %s, %s, %s, %s)", 
+                        (file_name, '', folder_id, session['id'], 'text'))
+            mysql.connection.commit()
+            flash('Text file created!', 'success')
+
+    # --- Handle File Upload ---
+    if 'uploaded_file' in request.files:
+        file = request.files['uploaded_file']
+        if file.filename != '':
+            # Secure the filename to prevent malicious paths
+            filename = secure_filename(file.filename)
+            # Create a user-specific directory if it doesn't exist
+            user_upload_dir = os.path.join(app.config['UPLOAD_FOLDER'], str(session['id']))
+            os.makedirs(user_upload_dir, exist_ok=True)
+            # Save the file
+            file_path = os.path.join(user_upload_dir, filename)
+            file.save(file_path)
+            
+            # Store file info in the database
+            db_filepath = os.path.join(str(session['id']), filename) # Store relative path
+            cur.execute("INSERT INTO files (name, folder_id, user_id, file_type, filepath) VALUES (%s, %s, %s, %s, %s)",
+                        (filename, folder_id, session['id'], 'upload', db_filepath))
+            mysql.connection.commit()
+            flash('File uploaded successfully!', 'success')
+
+    cur.close()
+    return redirect(url_for('view_folder', folder_id=folder_id))
+
+
+@app.route('/file/<int:file_id>', methods=['GET', 'POST'])
+def view_file(file_id):
+    """Displays and updates a text file's content."""
+    if 'loggedin' not in session:
+        return redirect(url_for('login'))
+
+    cur = mysql.connection.cursor()
     cur.execute("SELECT * FROM files WHERE id = %s AND user_id = %s", (file_id, session['id']))
     file = cur.fetchone()
-    if not file:
-        flash('File not found or you do not have permission to view it.', 'danger')
+    
+    if not file or file['file_type'] != 'text':
+        flash('File not found or is not a text file.', 'danger')
+        cur.close()
         return redirect(url_for('dashboard'))
 
     if request.method == 'POST':
         content = request.form['content']
         cur.execute("UPDATE files SET content = %s WHERE id = %s", (content, file_id))
         mysql.connection.commit()
-        flash('File saved successfully!', 'success')
-        # Refetch the file to show updated content
+        flash('File saved!', 'success')
         cur.execute("SELECT * FROM files WHERE id = %s", [file_id])
         file = cur.fetchone()
     
     cur.close()
     return render_template('file.html', file=file)
+
+# --- NEW DOWNLOAD ROUTE ---
+@app.route('/download/<int:file_id>')
+def download_file(file_id):
+    """Handles downloading an uploaded file."""
+    if 'loggedin' not in session:
+        return redirect(url_for('login'))
+
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT * FROM files WHERE id = %s AND user_id = %s", (file_id, session['id']))
+    file_info = cur.fetchone()
+    cur.close()
+
+    if file_info and file_info['file_type'] == 'upload' and file_info['filepath']:
+        try:
+            # send_from_directory is a secure way to send files
+            return send_from_directory(app.config['UPLOAD_FOLDER'], file_info['filepath'], as_attachment=True)
+        except FileNotFoundError:
+            flash('File not found on server.', 'danger')
+            return redirect(url_for('view_folder', folder_id=file_info['folder_id']))
+    else:
+        flash('File not found or is not downloadable.', 'danger')
+        return redirect(url_for('dashboard'))
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

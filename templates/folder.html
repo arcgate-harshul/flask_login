@@ -25,23 +25,45 @@
             {% endif %}
         {% endwith %}
 
-        <div class="form-container">
-            <h3>Create a New File</h3>
-            <form action="{{ url_for('add_file', folder_id=folder.id) }}" method="POST" class="inline-form">
-                <input type="text" name="file_name" placeholder="Enter file name (.txt)" required>
-                <button type="submit" class="btn">Create File</button>
-            </form>
+        <!-- Combined Form Container -->
+        <div class="form-container-split">
+            <!-- Form for creating text files -->
+            <div class="form-section">
+                <h3>Create a New Text File</h3>
+                <form action="{{ url_for('add_file', folder_id=folder.id) }}" method="POST" class="inline-form">
+                    <input type="text" name="text_file_name" placeholder="Enter file name (.txt)" required>
+                    <button type="submit" class="btn">Create Text File</button>
+                </form>
+            </div>
+            <!-- Form for uploading files -->
+            <div class="form-section">
+                <h3>Upload a File</h3>
+                <form action="{{ url_for('add_file', folder_id=folder.id) }}" method="POST" enctype="multipart/form-data" class="inline-form">
+                    <input type="file" name="uploaded_file" required>
+                    <button type="submit" class="btn">Upload File</button>
+                </form>
+            </div>
         </div>
+
 
         <div class="items-grid">
             <h3>Files in this Folder</h3>
             {% for file in files %}
-                <a href="{{ url_for('view_file', file_id=file.id) }}" class="item-card file-card">
-                    <div class="item-icon">📄</div>
-                    <div class="item-name">{{ file.name }}</div>
-                </a>
+                {% if file.file_type == 'text' %}
+                    <!-- Link for text files -->
+                    <a href="{{ url_for('view_file', file_id=file.id) }}" class="item-card file-card">
+                        <div class="item-icon">📄</div>
+                        <div class="item-name">{{ file.name }}</div>
+                    </a>
+                {% else %}
+                    <!-- Link for uploaded files (download) -->
+                    <a href="{{ url_for('download_file', file_id=file.id) }}" class="item-card file-card">
+                        <div class="item-icon">📥</div>
+                        <div class="item-name">{{ file.name }}</div>
+                    </a>
+                {% endif %}
             {% else %}
-                <p>This folder is empty. Create a file above!</p>
+                <p>This folder is empty. Create or upload a file above!</p>
             {% endfor %}
         </div>
     </div>
