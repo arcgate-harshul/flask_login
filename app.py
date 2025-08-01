@@ -1,8 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, flash, session, send_from_directory, jsonify
 from flask_mysqldb import MySQL
 from werkzeug.utils import secure_filename
 import yaml
 import os
+import time
+from agora_token_builder import RtcTokenBuilder
 
 # Initialize the Flask App
 app = Flask(__name__)
@@ -21,9 +23,28 @@ app.config['SECRET_KEY'] = 'your_super_secret_key'
 UPLOAD_FOLDER = os.path.join(app.root_path, 'uploads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+# --- AGORA CONFIG ---
+app.config['AGORA_APP_ID'] = 'eb6bdbc56a9a45d589680734a4e94940'
+app.config['AGORA_APP_CERTIFICATE'] = '610a04b272f24461aed01c6a7a719a62'
+
 
 # Initialize MySQL
 mysql = MySQL(app)
+
+# --- Token Generation ---
+def generate_agora_token(channel_name, user_id):
+    """Generates an Agora token for a user to join a channel."""
+    app_id = app.config['AGORA_APP_ID']
+    app_certificate = app.config['AGORA_APP_CERTIFICATE']
+    # Tokens expire. Set an expiration time in seconds.
+    expire_time_in_seconds = 3600
+    current_timestamp = int(time.time())
+    privilege_expired_ts = current_timestamp + expire_time_in_seconds
+    # A role of publisher allows the user to both send and receive video/audio.
+    role = 1 # Publisher
+
+    token = RtcTokenBuilder.buildTokenWithUid(app_id, app_certificate, channel_name, user_id, role, privilege_expired_ts)
+    return token
 
 # --- User Management Routes ---
 @app.route('/')
@@ -80,17 +101,48 @@ def dashboard():
     search_query = request.args.get('search', '') # Get search query from URL
 
     if search_query:
-        # If there is a search query, filter folders by name
         like_query = f"%{search_query}%"
         cur.execute("SELECT * FROM folders WHERE user_id = %s AND name LIKE %s", (session['id'], like_query))
     else:
-        # Otherwise, get all folders
         cur.execute("SELECT * FROM folders WHERE user_id = %s", [session['id']])
     
     folders = cur.fetchall()
     cur.close()
-    # Pass the search query to the template to pre-fill the search box
     return render_template('dashboard.html', folders=folders, search_query=search_query)
+
+# ... (All your other routes for folders and files remain the same) ...
+
+# --- AGORA VIDEO CALL ROUTES ---
+@app.route('/video_call')
+def video_call_page():
+    """Renders the video call page."""
+    if 'loggedin' not in session:
+        return redirect(url_for('login'))
+    return render_template('video_call.html')
+
+@app.route('/get_token')
+def get_token():
+    """API endpoint to provide token to the frontend."""
+    if 'loggedin' not in session:
+        return jsonify({'error': 'User not logged in'}), 401
+
+    # For simplicity, we'll use a fixed channel name.
+    # In a real app, you might let users create or join named rooms.
+    channel_name = "test_channel"
+    user_id = session['id']
+    token = generate_agora_token(channel_name, user_id)
+    
+    return jsonify({
+        'token': token, 
+        'appId': app.config['AGORA_APP_ID'],
+        'channel': channel_name,
+        'uid': user_id
+    })
+
+
+# --- ALL OTHER ROUTES (add_folder, view_folder, etc.) ---
+# (Keep all your existing routes for file and folder management here)
+# I've omitted them for brevity, but you should keep them in your file.
 
 @app.route('/add_folder', methods=['POST'])
 def add_folder():
@@ -119,11 +171,9 @@ def view_folder(folder_id):
     search_query = request.args.get('search', '') # Get search query from URL
 
     if search_query:
-        # If there is a search query, filter files by name
         like_query = f"%{search_query}%"
         cur.execute("SELECT * FROM files WHERE folder_id = %s AND user_id = %s AND name LIKE %s", (folder_id, session['id'], like_query))
     else:
-        # Otherwise, get all files in the folder
         cur.execute("SELECT * FROM files WHERE folder_id = %s AND user_id = %s", (folder_id, session['id']))
     
     files = cur.fetchall()
@@ -201,8 +251,6 @@ def download_file(file_id):
     else:
         flash('File not found or is not downloadable.', 'danger')
         return redirect(url_for('dashboard'))
-
-# --- Delete and Rename Routes ---
 
 @app.route('/delete_folder/<int:folder_id>', methods=['POST'])
 def delete_folder(folder_id):

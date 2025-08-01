@@ -39,7 +39,35 @@ body {
     margin: 0;
 }
 
-/* --- NEW SEARCH CONTAINER STYLE --- */
+/* --- VIDEO CALL STYLES --- */
+.video-call-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+#remote-player-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.video-player {
+    width: 100%;
+    height: 300px;
+    background-color: #000;
+    border-radius: 8px;
+}
+
+.video-controls {
+    text-align: center;
+    margin-top: 1.5rem;
+}
+
+
+/* --- Search, Forms, Lists, etc. --- */
 .search-container {
     margin-bottom: 1.5rem;
 }
@@ -78,7 +106,6 @@ body {
     flex-grow: 1;
 }
 
-/* --- LIST STYLES --- */
 .items-list {
     margin-top: 2rem;
 }
@@ -138,7 +165,7 @@ body {
 }
 
 .item-icon {
-    font-size: 2rem; /* Adjusted for list view */
+    font-size: 2rem;
     margin-right: 1rem;
 }
 
@@ -147,7 +174,6 @@ body {
     word-wrap: break-word;
 }
 
-/* Editor Styles */
 .editor-container {
     margin-top: 2rem;
 }
@@ -199,7 +225,7 @@ h2 {
     padding: 0.75rem;
     border: 1px solid #ccc;
     border-radius: 5px;
-    box-sizing: border-box; /* Important for padding and width */
+    box-sizing: border-box;
 }
 
 .btn {
@@ -218,7 +244,6 @@ h2 {
     background-color: #0056b3;
 }
 
-/* Alert styles for flash messages */
 .alert {
     padding: 1rem;
     margin-bottom: 1rem;
@@ -239,7 +264,6 @@ h2 {
     border-color: #f5c6cb;
 }
 
-/* Style for the new signup/login links */
 .form-link {
     text-align: center;
     margin-top: 1.5rem;

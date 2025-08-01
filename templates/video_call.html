@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Call</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Agora Web SDK -->
+    <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.20.2.js"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <h2>Video Call</h2>
+            <div>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+                <a href="{{ url_for('logout') }}" class="btn btn-secondary">Logout</a>
+            </div>
+        </div>
+
+        <div class="video-call-container">
+            <!-- Video streams will be injected here -->
+            <div id="local-player" class="video-player"></div>
+            <div id="remote-player-list"></div>
+        </div>
+
+        <div class="video-controls">
+            <button id="join-btn" class="btn">Join Call</button>
+            <button id="leave-btn" class="btn btn-delete" style="display: none;">Leave Call</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // --- Basic setup ---
+            const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+            let localTracks = [];
+            let remoteUsers = {};
+
+            // --- DOM Elements ---
+            const joinBtn = document.getElementById("join-btn");
+            const leaveBtn = document.getElementById("leave-btn");
+            const localPlayerContainer = document.getElementById("local-player");
+            const remotePlayerList = document.getElementById("remote-player-list");
+
+            // --- Agora Event Handlers ---
+            const handleUserPublished = async (user, mediaType) => {
+                await client.subscribe(user, mediaType);
+                console.log("subscribe success");
+
+                if (mediaType === "video") {
+                    const remotePlayer = document.createElement("div");
+                    remotePlayer.id = `player-${user.uid}`;
+                    remotePlayer.className = "video-player";
+                    remotePlayerList.append(remotePlayer);
+                    user.videoTrack.play(remotePlayer);
+                }
+
+                if (mediaType === "audio") {
+                    user.audioTrack.play();
+                }
+            };
+
+            const handleUserUnpublished = (user) => {
+                const playerContainer = document.getElementById(`player-${user.uid}`);
+                if (playerContainer) {
+                    playerContainer.remove();
+                }
+            };
+
+            // --- Main Functions ---
+            const join = async () => {
+                // Fetch token from our Flask server
+                const response = await fetch('/get_token');
+                const data = await response.json();
+
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+
+                const { appId, channel, token, uid } = data;
+
+                // Join the channel
+                await client.join(appId, channel, token, uid);
+                console.log("join success");
+
+                // Create and publish local tracks
+                localTracks = await AgoraRTC.createMicrophoneAndCameraTracks();
+                localPlayerContainer.innerHTML = ''; // Clear previous content
+                localTracks[1].play(localPlayerContainer); // Play video track
+                await client.publish(Object.values(localTracks));
+                console.log("publish success");
+
+                // Update UI
+                joinBtn.style.display = "none";
+                leaveBtn.style.display = "inline-block";
+            };
+
+            const leave = async () => {
+                for (let track of localTracks) {
+                    track.stop();
+                    track.close();
+                }
+                await client.leave();
+                console.log("leave success");
+
+                // Clear UI
+                localPlayerContainer.innerHTML = '';
+                remotePlayerList.innerHTML = '';
+
+                // Update UI
+                joinBtn.style.display = "inline-block";
+                leaveBtn.style.display = "none";
+            };
+
+            // --- Event Listeners ---
+            joinBtn.addEventListener("click", join);
+            leaveBtn.addEventListener("click", leave);
+
+            client.on("user-published", handleUserPublished);
+            client.on("user-unpublished", handleUserUnpublished);
+        });
+    </script>
+</body>
+</html>
