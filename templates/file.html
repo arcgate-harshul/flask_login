@@ -5,15 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ file.name }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <!-- Add the TinyMCE script -->
-    <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <!-- 
+      API Key has been added.
+    -->
+    <script src="https://cdn.tiny.cloud/1/ydkwwumdubezej8jgwh73p5wmlc7qcg1q5nkwtsdwur4wmut/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
     <!-- Initialize TinyMCE -->
     <script>
-      tinymce.init({
-        selector: 'textarea.text-editor',
-        plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount',
-        toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table | align lineheight | numlist bullist indent outdent | emoticons charmap | removeformat',
-        height: 500,
+      // Wait for the page to fully load before initializing the editor
+      document.addEventListener('DOMContentLoaded', function () {
+        tinymce.init({
+          selector: 'textarea.text-editor',
+          plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount',
+          toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table | align lineheight | numlist bullist indent outdent | emoticons charmap | removeformat',
+          height: 500,
+        });
       });
     </script>
 </head>
