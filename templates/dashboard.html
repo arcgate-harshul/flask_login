@@ -10,7 +10,11 @@
     <div class="dashboard-container">
         <div class="dashboard-header">
             <h2>Welcome, {{ session.username }}!</h2>
-            <a href="{{ url_for('logout') }}" class="btn btn-secondary">Logout</a>
+            <div>
+                <!-- New Video Call Button -->
+                <a href="{{ url_for('video_call_page') }}" class="btn">Start Video Call</a>
+                <a href="{{ url_for('logout') }}" class="btn btn-secondary">Logout</a>
+            </div>
         </div>
 
         <!-- Flash messages section -->
