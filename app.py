@@ -77,10 +77,20 @@ def dashboard():
         return redirect(url_for('login'))
     
     cur = mysql.connection.cursor()
-    cur.execute("SELECT * FROM folders WHERE user_id = %s", [session['id']])
+    search_query = request.args.get('search', '') # Get search query from URL
+
+    if search_query:
+        # If there is a search query, filter folders by name
+        like_query = f"%{search_query}%"
+        cur.execute("SELECT * FROM folders WHERE user_id = %s AND name LIKE %s", (session['id'], like_query))
+    else:
+        # Otherwise, get all folders
+        cur.execute("SELECT * FROM folders WHERE user_id = %s", [session['id']])
+    
     folders = cur.fetchall()
     cur.close()
-    return render_template('dashboard.html', folders=folders)
+    # Pass the search query to the template to pre-fill the search box
+    return render_template('dashboard.html', folders=folders, search_query=search_query)
 
 @app.route('/add_folder', methods=['POST'])
 def add_folder():
@@ -106,10 +116,19 @@ def view_folder(folder_id):
         flash('Folder not found.', 'danger')
         return redirect(url_for('dashboard'))
 
-    cur.execute("SELECT * FROM files WHERE folder_id = %s AND user_id = %s", (folder_id, session['id']))
+    search_query = request.args.get('search', '') # Get search query from URL
+
+    if search_query:
+        # If there is a search query, filter files by name
+        like_query = f"%{search_query}%"
+        cur.execute("SELECT * FROM files WHERE folder_id = %s AND user_id = %s AND name LIKE %s", (folder_id, session['id'], like_query))
+    else:
+        # Otherwise, get all files in the folder
+        cur.execute("SELECT * FROM files WHERE folder_id = %s AND user_id = %s", (folder_id, session['id']))
+    
     files = cur.fetchall()
     cur.close()
-    return render_template('folder.html', folder=folder, files=files)
+    return render_template('folder.html', folder=folder, files=files, search_query=search_query)
 
 @app.route('/add_file/<int:folder_id>', methods=['POST'])
 def add_file(folder_id):
@@ -183,14 +202,12 @@ def download_file(file_id):
         flash('File not found or is not downloadable.', 'danger')
         return redirect(url_for('dashboard'))
 
-# --- NEW DELETE AND RENAME ROUTES ---
+# --- Delete and Rename Routes ---
 
 @app.route('/delete_folder/<int:folder_id>', methods=['POST'])
 def delete_folder(folder_id):
     if 'loggedin' not in session: return redirect(url_for('login'))
     cur = mysql.connection.cursor()
-    # Optional: Delete physical files associated with this folder first
-    # This part is more complex, for now we rely on ON DELETE CASCADE for DB cleanup
     cur.execute("DELETE FROM folders WHERE id = %s AND user_id = %s", (folder_id, session['id']))
     mysql.connection.commit()
     cur.close()
@@ -216,13 +233,11 @@ def delete_file(file_id):
     cur.execute("SELECT * FROM files WHERE id = %s AND user_id = %s", (file_id, session['id']))
     file_info = cur.fetchone()
     if file_info:
-        # If it's an uploaded file, delete it from the filesystem
         if file_info['file_type'] == 'upload' and file_info['filepath']:
             physical_path = os.path.join(app.config['UPLOAD_FOLDER'], file_info['filepath'])
             if os.path.exists(physical_path):
                 os.remove(physical_path)
         
-        # Delete the record from the database
         cur.execute("DELETE FROM files WHERE id = %s", [file_id])
         mysql.connection.commit()
         flash('File deleted successfully.', 'success')

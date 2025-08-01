@@ -25,6 +25,14 @@
             {% endif %}
         {% endwith %}
 
+        <!-- Search Form -->
+        <div class="search-container">
+            <form action="{{ url_for('view_folder', folder_id=folder.id) }}" method="GET" class="inline-form">
+                <input type="text" name="search" placeholder="Search files..." value="{{ search_query or '' }}">
+                <button type="submit" class="btn">Search</button>
+            </form>
+        </div>
+
         <div class="form-container-split">
             <!-- Form for creating text files -->
             <div class="form-section">
@@ -73,7 +81,11 @@
                     </div>
                 </div>
             {% else %}
-                <p>This folder is empty. Create or upload a file above!</p>
+                {% if search_query %}
+                    <p>No files found matching your search.</p>
+                {% else %}
+                    <p>This folder is empty. Create or upload a file above!</p>
+                {% endif %}
             {% endfor %}
         </div>
     </div>

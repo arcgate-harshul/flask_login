@@ -39,6 +39,11 @@ body {
     margin: 0;
 }
 
+/* --- NEW SEARCH CONTAINER STYLE --- */
+.search-container {
+    margin-bottom: 1.5rem;
+}
+
 .form-container {
     background: #f9f9f9;
     padding: 1.5rem;
@@ -73,7 +78,7 @@ body {
     flex-grow: 1;
 }
 
-/* --- NEW LIST STYLES --- */
+/* --- LIST STYLES --- */
 .items-list {
     margin-top: 2rem;
 }
@@ -130,30 +135,6 @@ body {
 }
 .btn-delete:hover {
     background-color: #c82333;
-}
-
-
-/* --- GRID STYLES (for reference, replaced by list) --- */
-.items-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 1.5rem;
-}
-
-.item-card {
-    background: #fdfdfd;
-    border: 1px solid #eee;
-    border-radius: 8px;
-    padding: 1.5rem;
-    text-align: center;
-    text-decoration: none;
-    color: #333;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.item-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
 }
 
 .item-icon {
