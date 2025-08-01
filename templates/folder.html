@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ folder.name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <h2>Folder: {{ folder.name }}</h2>
+            <div>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+                <a href="{{ url_for('logout') }}" class="btn btn-secondary">Logout</a>
+            </div>
+        </div>
+
+        <!-- Flash messages section -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="form-container">
+            <h3>Create a New File</h3>
+            <form action="{{ url_for('add_file', folder_id=folder.id) }}" method="POST" class="inline-form">
+                <input type="text" name="file_name" placeholder="Enter file name (.txt)" required>
+                <button type="submit" class="btn">Create File</button>
+            </form>
+        </div>
+
+        <div class="items-grid">
+            <h3>Files in this Folder</h3>
+            {% for file in files %}
+                <a href="{{ url_for('view_file', file_id=file.id) }}" class="item-card file-card">
+                    <div class="item-icon">📄</div>
+                    <div class="item-name">{{ file.name }}</div>
+                </a>
+            {% else %}
+                <p>This folder is empty. Create a file above!</p>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

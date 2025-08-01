@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ file.name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <h2>Editing: {{ file.name }}</h2>
+            <div>
+                <a href="{{ url_for('view_folder', folder_id=file.folder_id) }}" class="btn btn-secondary">Back to Folder</a>
+                <a href="{{ url_for('logout') }}" class="btn btn-secondary">Logout</a>
+            </div>
+        </div>
+        
+        <!-- Flash messages section -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="editor-container">
+            <form action="{{ url_for('view_file', file_id=file.id) }}" method="POST">
+                <textarea name="content" class="text-editor">{{ file.content }}</textarea>
+                <button type="submit" class="btn btn-save">Save File</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

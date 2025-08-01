@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <h2>Welcome, {{ session.username }}!</h2>
+            <a href="{{ url_for('logout') }}" class="btn btn-secondary">Logout</a>
+        </div>
+
+        <!-- Flash messages section -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="form-container">
+            <h3>Create a New Folder</h3>
+            <form action="{{ url_for('add_folder') }}" method="POST" class="inline-form">
+                <input type="text" name="folder_name" placeholder="Enter folder name" required>
+                <button type="submit" class="btn">Create Folder</button>
+            </form>
+        </div>
+
+        <div class="items-grid">
+            <h3>Your Folders</h3>
+            {% for folder in folders %}
+                <a href="{{ url_for('view_folder', folder_id=folder.id) }}" class="item-card folder-card">
+                    <div class="item-icon">📁</div>
+                    <div class="item-name">{{ folder.name }}</div>
+                </a>
+            {% else %}
+                <p>You don't have any folders yet. Create one above!</p>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>
