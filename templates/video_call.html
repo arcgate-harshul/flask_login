@@ -18,6 +18,11 @@
             </div>
         </div>
 
+        <!-- New HTTPS Warning -->
+        <div class="alert alert-warning" id="https-warning">
+            <strong>Important:</strong> Your browser requires a secure connection (HTTPS) to access your camera and microphone. This feature may not work correctly on an insecure connection.
+        </div>
+
         <div class="video-call-container">
             <!-- Video streams will be injected here -->
             <div id="local-player" class="video-player"></div>
@@ -42,11 +47,18 @@
             const leaveBtn = document.getElementById("leave-btn");
             const localPlayerContainer = document.getElementById("local-player");
             const remotePlayerList = document.getElementById("remote-player-list");
+            const httpsWarning = document.getElementById("https-warning");
+
+            // Hide warning if the connection is secure
+            if (window.location.protocol === "https:") {
+                httpsWarning.style.display = "none";
+            }
 
             // --- Agora Event Handlers ---
             const handleUserPublished = async (user, mediaType) => {
+                console.log(`User ${user.uid} published media: ${mediaType}`);
                 await client.subscribe(user, mediaType);
-                console.log("subscribe success");
+                console.log("Subscribe success");
 
                 if (mediaType === "video") {
                     const remotePlayer = document.createElement("div");
@@ -62,6 +74,7 @@
             };
 
             const handleUserUnpublished = (user) => {
+                console.log(`User ${user.uid} unpublished.`);
                 const playerContainer = document.getElementById(`player-${user.uid}`);
                 if (playerContainer) {
                     playerContainer.remove();
@@ -70,40 +83,52 @@
 
             // --- Main Functions ---
             const join = async () => {
-                // Fetch token from our Flask server
-                const response = await fetch('/get_token');
-                const data = await response.json();
+                console.log("Join button clicked. Fetching token...");
+                try {
+                    // Fetch token from our Flask server
+                    const response = await fetch('/get_token');
+                    const data = await response.json();
 
-                if (data.error) {
-                    alert(data.error);
-                    return;
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+
+                    const { appId, channel, token, uid } = data;
+                    console.log("Token received. Joining channel...");
+
+                    // Join the channel
+                    await client.join(appId, channel, token, uid);
+                    console.log("Join success. Creating local tracks...");
+
+                    // Create and publish local tracks (this should trigger permission prompt)
+                    localTracks = await AgoraRTC.createMicrophoneAndCameraTracks();
+                    console.log("Local tracks created.");
+                    
+                    localPlayerContainer.innerHTML = ''; // Clear previous content
+                    localTracks[1].play(localPlayerContainer); // Play video track
+                    console.log("Local video playing.");
+
+                    await client.publish(Object.values(localTracks));
+                    console.log("Publish success.");
+
+                    // Update UI
+                    joinBtn.style.display = "none";
+                    leaveBtn.style.display = "inline-block";
+                } catch (error) {
+                    console.error("Failed to join channel:", error);
+                    alert("Could not join the call. Check the console for errors. This is likely due to an insecure connection (HTTP).");
                 }
-
-                const { appId, channel, token, uid } = data;
-
-                // Join the channel
-                await client.join(appId, channel, token, uid);
-                console.log("join success");
-
-                // Create and publish local tracks
-                localTracks = await AgoraRTC.createMicrophoneAndCameraTracks();
-                localPlayerContainer.innerHTML = ''; // Clear previous content
-                localTracks[1].play(localPlayerContainer); // Play video track
-                await client.publish(Object.values(localTracks));
-                console.log("publish success");
-
-                // Update UI
-                joinBtn.style.display = "none";
-                leaveBtn.style.display = "inline-block";
             };
 
             const leave = async () => {
+                console.log("Leave button clicked.");
                 for (let track of localTracks) {
                     track.stop();
                     track.close();
                 }
                 await client.leave();
-                console.log("leave success");
+                console.log("Leave success.");
 
                 // Clear UI
                 localPlayerContainer.innerHTML = '';
