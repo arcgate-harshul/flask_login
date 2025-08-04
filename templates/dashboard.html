@@ -11,8 +11,9 @@
         <div class="dashboard-header">
             <h2>Welcome, {{ session.username }}!</h2>
             <div>
-                <!-- New Video Call Button -->
-                <a href="{{ url_for('video_call_page') }}" class="btn">Start Video Call</a>
+                <!-- New Chat Button -->
+                <a href="{{ url_for('chat') }}" class="btn">Live Chat</a>
+                <a href="{{ url_for('video_call_page') }}" class="btn">Video Call</a>
                 <a href="{{ url_for('logout') }}" class="btn btn-secondary">Logout</a>
             </div>
         </div>

@@ -39,35 +39,51 @@ body {
     margin: 0;
 }
 
-/* --- VIDEO CALL STYLES --- */
-.video-call-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    margin-top: 1.5rem;
-    margin-bottom: 1.5rem;
-}
-
-#remote-player-list {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-}
-
-.video-player {
-    width: 100%;
-    height: 300px;
-    background-color: #000;
+/* --- CHAT STYLES --- */
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 60vh;
+    border: 1px solid #eee;
     border-radius: 8px;
-}
-
-.video-controls {
-    text-align: center;
     margin-top: 1.5rem;
 }
 
+.chat-messages {
+    flex-grow: 1;
+    padding: 1rem;
+    overflow-y: auto;
+    background-color: #fdfdfd;
+}
 
-/* --- Search, Forms, Lists, etc. --- */
+.message {
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 1rem;
+    border-radius: 15px;
+    max-width: 80%;
+}
+
+.message strong {
+    color: #007bff;
+}
+
+.chat-form {
+    display: flex;
+    padding: 1rem;
+    border-top: 1px solid #eee;
+    background-color: #f9f9f9;
+}
+
+#message-input {
+    flex-grow: 1;
+    border: 1px solid #ccc;
+    padding: 0.75rem;
+    border-radius: 5px;
+    margin-right: 1rem;
+}
+
+
+/* --- Other Styles --- */
 .search-container {
     margin-bottom: 1.5rem;
 }
@@ -278,4 +294,30 @@ h2 {
 
 .form-link a:hover {
     text-decoration: underline;
+}
+
+.video-call-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+#remote-player-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.video-player {
+    width: 100%;
+    height: 300px;
+    background-color: #000;
+    border-radius: 8px;
+}
+
+.video-controls {
+    text-align: center;
+    margin-top: 1.5rem;
 }

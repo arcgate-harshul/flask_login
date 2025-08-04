@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Room</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Socket.IO client library -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <h2>Live Chat Room</h2>
+            <div>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+                <a href="{{ url_for('logout') }}" class="btn btn-secondary">Logout</a>
+            </div>
+        </div>
+
+        <div class="chat-container">
+            <div id="messages" class="chat-messages">
+                <!-- Previous messages are loaded here by Flask -->
+                {% for message in messages %}
+                    <div class="message">
+                        <strong>{{ message.username }}:</strong> {{ message.content }}
+                    </div>
+                {% endfor %}
+            </div>
+            <form id="message-form" class="chat-form">
+                <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off">
+                <button type="submit" class="btn">Send</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Connect to the Socket.IO server
+            const socket = io();
+            const messageInput = document.getElementById('message-input');
+            const messagesContainer = document.getElementById('messages');
+
+            // Function to scroll to the bottom of the chat
+            function scrollToBottom() {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+
+            // Scroll to bottom on page load
+            scrollToBottom();
+
+            // Handle form submission to send a message
+            document.getElementById('message-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const message = messageInput.value.trim();
+                if (message) {
+                    socket.send(message);
+                    messageInput.value = '';
+                }
+            });
+
+            // Listen for incoming messages from the server
+            socket.on('message', function(data) {
+                // Create a new message element
+                const messageElement = document.createElement('div');
+                messageElement.classList.add('message');
+                // The server sends a dictionary with username and msg
+                messageElement.innerHTML = `<strong>${data.username}:</strong> ${data.msg}`;
+                
+                // Add the new message to the container
+                messagesContainer.appendChild(messageElement);
+                
+                // Scroll to the bottom to see the new message
+                scrollToBottom();
+            });
+        });
+    </script>
+</body>
+</html>
